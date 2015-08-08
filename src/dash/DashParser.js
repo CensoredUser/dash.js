@@ -286,9 +286,11 @@ Dash.dependencies.DashParser = function () {
                         var mergedValue;
 
                         // child is absolute, don't merge
-                        if (childValue.indexOf("http://") === 0) {
+                        if (childValue.indexOf("https://") === 0) {
                             mergedValue = childValue;
-                        } else {
+                        } else if (childValue.__text.indexOf("https://") === 0)
+							mergedValue = childValue.__text;
+						} else {
                             mergedValue = parentValue + childValue;
                         }
 
@@ -367,7 +369,7 @@ Dash.dependencies.DashParser = function () {
                     // Setting manifest's BaseURL to the first BaseURL
                     manifest.BaseURL = manifest.BaseURL_asArray[0];
 
-                    if (manifest.BaseURL.toString().indexOf("http") !== 0) {
+                    if (manifest.BaseURL.toString().indexOf("https") !== 0) {
                         manifest.BaseURL = baseUrl + manifest.BaseURL;
                     }
                 }

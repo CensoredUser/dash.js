@@ -300,6 +300,16 @@ Dash.dependencies.DashManifestExtensions.prototype = {
         "use strict";
         return representation.bandwidth;
     },
+	
+    getResolution: function (representation) {
+        "use strict";
+        return representation.height;
+    },
+	
+    getFrameRate: function (representation) {
+        "use strict";
+        return representation.frameRate;
+    },
 
     getRefreshDelay: function (manifest) {
         "use strict";
@@ -338,6 +348,24 @@ Dash.dependencies.DashManifestExtensions.prototype = {
         return bitrateList;
     },
 
+	getResolutionListForAdaptation: function (adaptation) {
+        if (!adaptation || !adaptation.Representation_asArray || !adaptation.Representation_asArray.length) return null;
+        var a = this.processAdaptation(adaptation), reps = a.Representation_asArray, ln = reps.length, resolutionList = [];
+        for (var i = 0; i < ln; i += 1) {
+            resolutionList.push(reps[i].height);
+        }
+        return resolutionList;
+    },
+	
+    getFrameRateListForAdaptation: function (adaptation) {
+        if (!adaptation || !adaptation.Representation_asArray || !adaptation.Representation_asArray.length) return null;
+        var a = this.processAdaptation(adaptation), reps = a.Representation_asArray, ln = reps.length, frameRateList = [];
+        for (var i = 0; i < ln; i += 1) {
+            frameRateList.push(reps[i].frameRate);
+        }
+        return frameRateList;
+    },
+
     getRepresentationFor: function (index, adaptation) {
         "use strict";
         return adaptation.Representation_asArray[index];
@@ -361,6 +389,13 @@ Dash.dependencies.DashManifestExtensions.prototype = {
 
             if (r.hasOwnProperty("id")) {
                 representation.id = r.id;
+            }			
+
+            if (r.hasOwnProperty("height")) {
+                representation.resolution = r.height;
+            }
+            if (r.hasOwnProperty("frameRate")) {
+                representation.frameRate = r.frameRate;
             }
 
             if (r.hasOwnProperty('bandwidth')){

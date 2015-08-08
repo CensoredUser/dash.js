@@ -525,6 +525,11 @@ MediaPlayer = function (context) {
         setQualityFor: function (type, value) {
             abrController.setPlaybackQuality(type, streamController.getActiveStreamInfo(), value);
         },
+		
+		getYouTubeQualitiesFor: function (type) {
+            var streamInfo = streamController.getActiveStreamInfo(), stream = streamController.getStreamById(streamInfo.id);
+            return stream.getYouTubeQualitiesFor(type);
+        },
 
         /**
          * @param type

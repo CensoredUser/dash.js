@@ -250,17 +250,21 @@
                     self.log(e);
                     window.URL.revokeObjectURL(sourceUrl);
 
-                    mediaSource.removeEventListener("sourceopen", onMediaSourceOpen);
-                    mediaSource.removeEventListener("webkitsourceopen", onMediaSourceOpen);
+					try {
+						mediaSource.removeEventListener("sourceopen", onMediaSourceOpen);
+						mediaSource.removeEventListener("webkitsourceopen", onMediaSourceOpen);
 
-                    //self.log("MediaSource set up.");
-                    setMediaDuration.call(self);
+						//self.log("MediaSource set up.");
+						setMediaDuration.call(self);
 
-                    activeStream.activate(mediaSource);
+						activeStream.activate(mediaSource);
 
-                    if (callback) {
-                        callback();
-                    }
+						if (callback) {
+							callback();
+						}
+					} catch (e) {
+						// HYPER - Ignore.
+					}
                 };
 
             if (!mediaSource) {
