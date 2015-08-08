@@ -31,8 +31,8 @@
 MediaPlayer.dependencies.ManifestLoader = function () {
     "use strict";
 
-    var RETRY_ATTEMPTS = 3,
-        RETRY_INTERVAL = 500,
+    var RETRY_ATTEMPTS = 2,
+        RETRY_INTERVAL = 250,
         parseBaseUrl = function (url) {
             var base = "";
 
@@ -125,10 +125,14 @@ MediaPlayer.dependencies.ManifestLoader = function () {
                         doLoad.call(self, url, remainingAttempts);
                     }, RETRY_INTERVAL);
                 } else {
-                    self.log("Failed loading manifest: " + url + " no retry attempts left");
-                    self.errHandler.downloadError("manifest", url, request);
-                    self.notify(MediaPlayer.dependencies.ManifestLoader.eventList.ENAME_MANIFEST_LOADED, null, new Error("Failed loading manifest: " + url + " no retry attempts left"));
-                }
+				// HYPER - Replace MediaPlayer event with DOM event so we can handle it in the app.
+                    //self.log("Failed loading manifest: " + url + " no retry attempts left");
+                    //self.errHandler.downloadError("manifest", url, request);
+                    //self.notify(MediaPlayer.dependencies.ManifestLoader.eventList.ENAME_MANIFEST_LOADED, null, new Error("Failed loading manifest: " + url + " no retry attempts left"));
+                    var event = document.createEvent('Event');
+					event.initEvent('manifestLoadFailed', true, true);
+					document.dispatchEvent(event);
+				}
             };
 
             try {

@@ -63,6 +63,8 @@ Dash.dependencies.DashAdapter = function () {
             trackInfo.id = representation.id;
             trackInfo.quality = representation.index;
             trackInfo.bandwidth = this.manifestExt.getBandwidth(r);
+			trackInfo.resolution = this.manifestExt.getResolution(r);
+			trackInfo.frameRate = this.manifestExt.getFrameRate(r);
             trackInfo.DVRWindow = representation.segmentAvailabilityRange;
             trackInfo.fragmentDuration = representation.segmentDuration || (representation.segments && representation.segments.length > 0 ? representation.segments[0].duration : NaN);
             trackInfo.MSETimeOffset = representation.MSETimeOffset;
@@ -87,6 +89,9 @@ Dash.dependencies.DashAdapter = function () {
             mediaInfo.mimeType = this.manifestExt.getMimeType(a);
             mediaInfo.contentProtection = this.manifestExt.getContentProtectionData(a);
             mediaInfo.bitrateList = this.manifestExt.getBitrateListForAdaptation(a);
+			mediaInfo.resolutionList = this.manifestExt.getResolutionListForAdaptation(a);
+			mediaInfo.frameRateList = this.manifestExt.getFrameRateListForAdaptation(a);
+
 
             if (mediaInfo.contentProtection) {
                 mediaInfo.contentProtection.forEach(function(item){

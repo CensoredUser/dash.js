@@ -346,6 +346,32 @@ MediaPlayer.dependencies.AbrController = function () {
 
             return infoList;
         },
+		
+		getResolutionList: function(mediaInfo) {
+             if (!mediaInfo || !mediaInfo.resolutionList) return null;
+             var resolutionList = mediaInfo.resolutionList, type = mediaInfo.type, infoList = [], resolutionInfo;
+             for (var i = 0, ln = resolutionList.length; i < ln; i += 1) {
+                 resolutionInfo = new MediaPlayer.vo.ResolutionInfo();
+                 resolutionInfo.mediaType = type;
+                 resolutionInfo.qualityIndex = i;
+                 resolutionInfo.resolution = resolutionList[i];
+                 infoList.push(resolutionInfo);
+             }
+             return infoList;
+         },
+		 
+         getFrameRateList: function(mediaInfo) {
+             if (!mediaInfo || !mediaInfo.frameRateList) return null;
+             var frameRateList = mediaInfo.frameRateList, type = mediaInfo.type, infoList = [], frameRateInfo;
+             for (var i = 0, ln = frameRateList.length; i < ln; i += 1) {
+                 frameRateInfo = new MediaPlayer.vo.FrameRateInfo();
+                 frameRateInfo.mediaType = type;
+                 frameRateInfo.qualityIndex = i;
+                 frameRateInfo.frameRate = frameRateList[i];
+                 infoList.push(frameRateInfo);
+             }
+             return infoList;
+        },
 
         updateTopQualityIndex: function(mediaInfo) {
             var type = mediaInfo.type,

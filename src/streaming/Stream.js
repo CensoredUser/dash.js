@@ -389,7 +389,20 @@ MediaPlayer.dependencies.Stream = function () {
         getStreamInfo: function() {
             return streamInfo;
         },
+		
+        getYouTubeQualitiesFor: function (type) {
+            var mediaInfo = getMediaInfo.call(this, type);
+            var resolutionList = this.abrController.getResolutionList(mediaInfo);
+            var frameRateList = this.abrController.getFrameRateList(mediaInfo);
 
+            for (var i = 0; i < resolutionList.length; i++) {
+                if (frameRateList[i] && frameRateList[i].quality === resolutionList[i].quality) {
+                    resolutionList[i].frameRate = frameRateList[i].frameRate;
+                }
+            }
+            return resolutionList;
+        },
+		
         hasMedia: function(type){
             return (getMediaInfo.call(this, type) !== null);
         },

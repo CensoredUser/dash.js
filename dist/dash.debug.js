@@ -1453,6 +1453,10 @@ MediaPlayer = function(context) {
         setQualityFor: function(type, value) {
             abrController.setPlaybackQuality(type, streamController.getActiveStreamInfo(), value);
         },
+        getYouTubeQualitiesFor: function(type) {
+            var streamInfo = streamController.getActiveStreamInfo(), stream = streamController.getStreamById(streamInfo.id);
+            return stream.getYouTubeQualitiesFor(type);
+        },
         getBitrateInfoListFor: function(type) {
             var streamInfo = streamController.getActiveStreamInfo(), stream = streamController.getStreamById(streamInfo.id);
             return stream.getBitrateListFor(type);
@@ -1752,6 +1756,8 @@ Dash.dependencies.DashAdapter = function() {
         trackInfo.id = representation.id;
         trackInfo.quality = representation.index;
         trackInfo.bandwidth = this.manifestExt.getBandwidth(r);
+        trackInfo.resolution = this.manifestExt.getResolution(r);
+        trackInfo.frameRate = this.manifestExt.getFrameRate(r);
         trackInfo.DVRWindow = representation.segmentAvailabilityRange;
         trackInfo.fragmentDuration = representation.segmentDuration || (representation.segments && representation.segments.length > 0 ? representation.segments[0].duration : NaN);
         trackInfo.MSETimeOffset = representation.MSETimeOffset;
@@ -1770,6 +1776,8 @@ Dash.dependencies.DashAdapter = function() {
         mediaInfo.mimeType = this.manifestExt.getMimeType(a);
         mediaInfo.contentProtection = this.manifestExt.getContentProtectionData(a);
         mediaInfo.bitrateList = this.manifestExt.getBitrateListForAdaptation(a);
+        mediaInfo.resolutionList = this.manifestExt.getResolutionListForAdaptation(a);
+        mediaInfo.frameRateList = this.manifestExt.getFrameRateListForAdaptation(a);
         if (mediaInfo.contentProtection) {
             mediaInfo.contentProtection.forEach(function(item) {
                 item.KID = self.manifestExt.getKID(item);
@@ -2706,8 +2714,10 @@ Dash.dependencies.DashParser = function() {
             merge: true,
             mergeFunction: function(parentValue, childValue) {
                 var mergedValue;
-                if (childValue.indexOf("http://") === 0) {
+                if (typeof childValue === String && childValue.indexOf("https://") === 0) {
                     mergedValue = childValue;
+                } else if (childValue.__text.indexOf("https://") === 0) {
+                    mergedValue = childValue.__text;
                 } else {
                     mergedValue = parentValue + childValue;
                 }
@@ -2761,7 +2771,7 @@ Dash.dependencies.DashParser = function() {
                 manifest.BaseURL = baseUrl;
             } else {
                 manifest.BaseURL = manifest.BaseURL_asArray[0];
-                if (manifest.BaseURL.toString().indexOf("http") !== 0) {
+                if (manifest.BaseURL.toString().indexOf("https") !== 0) {
                     manifest.BaseURL = baseUrl + manifest.BaseURL;
                 }
             }
@@ -3624,6 +3634,14 @@ Dash.dependencies.DashManifestExtensions.prototype = {
         "use strict";
         return representation.bandwidth;
     },
+    getResolution: function(representation) {
+        "use strict";
+        return representation.height;
+    },
+    getFrameRate: function(representation) {
+        "use strict";
+        return representation.frameRate;
+    },
     getRefreshDelay: function(manifest) {
         "use strict";
         var delay = NaN, minDelay = 2;
@@ -3644,6 +3662,22 @@ Dash.dependencies.DashManifestExtensions.prototype = {
         }
         return bitrateList;
     },
+    getResolutionListForAdaptation: function(adaptation) {
+        if (!adaptation || !adaptation.Representation_asArray || !adaptation.Representation_asArray.length) return null;
+        var a = this.processAdaptation(adaptation), reps = a.Representation_asArray, ln = reps.length, resolutionList = [];
+        for (var i = 0; i < ln; i += 1) {
+            resolutionList.push(reps[i].height);
+        }
+        return resolutionList;
+    },
+    getFrameRateListForAdaptation: function(adaptation) {
+        if (!adaptation || !adaptation.Representation_asArray || !adaptation.Representation_asArray.length) return null;
+        var a = this.processAdaptation(adaptation), reps = a.Representation_asArray, ln = reps.length, frameRateList = [];
+        for (var i = 0; i < ln; i += 1) {
+            frameRateList.push(reps[i].frameRate);
+        }
+        return frameRateList;
+    },
     getRepresentationFor: function(index, adaptation) {
         "use strict";
         return adaptation.Representation_asArray[index];
@@ -3657,6 +3691,12 @@ Dash.dependencies.DashManifestExtensions.prototype = {
             representation.adaptation = adaptation;
             if (r.hasOwnProperty("id")) {
                 representation.id = r.id;
+            }
+            if (r.hasOwnProperty("height")) {
+                representation.resolution = r.height;
+            }
+            if (r.hasOwnProperty("frameRate")) {
+                representation.frameRate = r.frameRate;
             }
             if (r.hasOwnProperty("bandwidth")) {
                 representation.bandwidth = r.bandwidth;
@@ -4501,6 +4541,8 @@ Dash.vo.Representation = function() {
     this.availableSegmentsNumber = 0;
     this.bandwidth = NaN;
     this.maxPlayoutRate = NaN;
+    this.resolution = NaN;
+    this.frameRate = NaN;
 };
 
 Dash.vo.Representation.prototype = {
@@ -4840,7 +4882,7 @@ MediaPlayer.dependencies.LiveEdgeFinder.LIVE_EDGE_NOT_FOUND_ERROR_CODE = 1;
 
 MediaPlayer.dependencies.ManifestLoader = function() {
     "use strict";
-    var RETRY_ATTEMPTS = 3, RETRY_INTERVAL = 500, parseBaseUrl = function(url) {
+    var RETRY_ATTEMPTS = 2, RETRY_INTERVAL = 250, parseBaseUrl = function(url) {
         var base = "";
         if (url.indexOf("/") !== -1) {
             if (url.indexOf("?") !== -1) {
@@ -4887,9 +4929,9 @@ MediaPlayer.dependencies.ManifestLoader = function() {
                     doLoad.call(self, url, remainingAttempts);
                 }, RETRY_INTERVAL);
             } else {
-                self.log("Failed loading manifest: " + url + " no retry attempts left");
-                self.errHandler.downloadError("manifest", url, request);
-                self.notify(MediaPlayer.dependencies.ManifestLoader.eventList.ENAME_MANIFEST_LOADED, null, new Error("Failed loading manifest: " + url + " no retry attempts left"));
+                var event = document.createEvent("Event");
+                event.initEvent("manifestLoadFailed", true, true);
+                document.dispatchEvent(event);
             }
         };
         try {
@@ -5308,6 +5350,17 @@ MediaPlayer.dependencies.Stream = function() {
         },
         getStreamInfo: function() {
             return streamInfo;
+        },
+        getYouTubeQualitiesFor: function(type) {
+            var mediaInfo = getMediaInfo.call(this, type);
+            var resolutionList = this.abrController.getResolutionList(mediaInfo);
+            var frameRateList = this.abrController.getFrameRateList(mediaInfo);
+            for (var i = 0; i < resolutionList.length; i++) {
+                if (frameRateList[i] && frameRateList[i].quality === resolutionList[i].quality) {
+                    resolutionList[i].frameRate = frameRateList[i].frameRate;
+                }
+            }
+            return resolutionList;
         },
         hasMedia: function(type) {
             return getMediaInfo.call(this, type) !== null;
@@ -6298,6 +6351,30 @@ MediaPlayer.dependencies.AbrController = function() {
                 bitrateInfo.qualityIndex = i;
                 bitrateInfo.bitrate = bitrateList[i];
                 infoList.push(bitrateInfo);
+            }
+            return infoList;
+        },
+        getResolutionList: function(mediaInfo) {
+            if (!mediaInfo || !mediaInfo.resolutionList) return null;
+            var resolutionList = mediaInfo.resolutionList, type = mediaInfo.type, infoList = [], resolutionInfo;
+            for (var i = 0, ln = resolutionList.length; i < ln; i += 1) {
+                resolutionInfo = new MediaPlayer.vo.ResolutionInfo();
+                resolutionInfo.mediaType = type;
+                resolutionInfo.qualityIndex = i;
+                resolutionInfo.resolution = resolutionList[i];
+                infoList.push(resolutionInfo);
+            }
+            return infoList;
+        },
+        getFrameRateList: function(mediaInfo) {
+            if (!mediaInfo || !mediaInfo.frameRateList) return null;
+            var frameRateList = mediaInfo.frameRateList, type = mediaInfo.type, infoList = [], frameRateInfo;
+            for (var i = 0, ln = frameRateList.length; i < ln; i += 1) {
+                frameRateInfo = new MediaPlayer.vo.FrameRateInfo();
+                frameRateInfo.mediaType = type;
+                frameRateInfo.qualityIndex = i;
+                frameRateInfo.frameRate = frameRateList[i];
+                infoList.push(frameRateInfo);
             }
             return infoList;
         },
@@ -8057,13 +8134,15 @@ MediaPlayer.dependencies.StreamController = function() {
             self.log("MediaSource is open!");
             self.log(e);
             window.URL.revokeObjectURL(sourceUrl);
-            mediaSource.removeEventListener("sourceopen", onMediaSourceOpen);
-            mediaSource.removeEventListener("webkitsourceopen", onMediaSourceOpen);
-            setMediaDuration.call(self);
-            activeStream.activate(mediaSource);
-            if (callback) {
-                callback();
-            }
+            try {
+                mediaSource.removeEventListener("sourceopen", onMediaSourceOpen);
+                mediaSource.removeEventListener("webkitsourceopen", onMediaSourceOpen);
+                setMediaDuration.call(self);
+                activeStream.activate(mediaSource);
+                if (callback) {
+                    callback();
+                }
+            } catch (e) {}
         };
         if (!mediaSource) {
             mediaSource = self.mediaSourceExt.createMediaSource();
@@ -12186,6 +12265,17 @@ MediaPlayer.vo.FragmentRequest.prototype = {
     ACTION_COMPLETE: "complete"
 };
 
+MediaPlayer.vo.FrameRateInfo = function() {
+    "use strict";
+    this.mediaType = null;
+    this.frameRate = null;
+    this.qualityIndex = NaN;
+};
+
+MediaPlayer.vo.FrameRateInfo.prototype = {
+    constructor: MediaPlayer.vo.FrameRateInfo
+};
+
 MediaPlayer.vo.ManifestInfo = function() {
     "use strict";
     this.DVRWindowSize = NaN;
@@ -12239,6 +12329,17 @@ MediaPlayer.models.MetricsList = function() {
 
 MediaPlayer.models.MetricsList.prototype = {
     constructor: MediaPlayer.models.MetricsList
+};
+
+MediaPlayer.vo.ResolutionInfo = function() {
+    "use strict";
+    this.mediaType = null;
+    this.resolution = null;
+    this.qualityIndex = NaN;
+};
+
+MediaPlayer.vo.ResolutionInfo.prototype = {
+    constructor: MediaPlayer.vo.ResolutionInfo
 };
 
 MediaPlayer.vo.StreamInfo = function() {

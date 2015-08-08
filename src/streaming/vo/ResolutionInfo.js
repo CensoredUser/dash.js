@@ -28,29 +28,13 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-Dash.vo.Representation = function () {
+MediaPlayer.vo.ResolutionInfo = function () {
     "use strict";
-    this.id = null;
-    this.index = -1;
-    this.adaptation = null;
-    this.segmentInfoType = null;
-    this.initialization = null;
-    this.segmentDuration = NaN;
-    this.timescale = 1;
-    this.startNumber = 1;
-    this.indexRange = null;
-    this.range = null;
-    this.presentationTimeOffset = 0;
-    // Set the source buffer timeOffset to this
-    this.MSETimeOffset = NaN;
-    this.segmentAvailabilityRange = null;
-    this.availableSegmentsNumber = 0;
-    this.bandwidth = NaN;
-    this.maxPlayoutRate = NaN;
-	this.resolution = NaN;
-    this.frameRate = NaN;
+    this.mediaType = null;
+    this.resolution = null;
+    this.qualityIndex = NaN;
 };
 
-Dash.vo.Representation.prototype = {
-    constructor: Dash.vo.Representation
+MediaPlayer.vo.ResolutionInfo.prototype = {
+    constructor: MediaPlayer.vo.ResolutionInfo
 };
