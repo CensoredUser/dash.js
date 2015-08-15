@@ -6540,9 +6540,6 @@ MediaPlayer.dependencies.BufferController = function() {
         });
         checkGapBetweenBuffers.call(self);
         checkIfSufficientBuffer.call(self);
-        if (bufferLevel < STALL_THRESHOLD) {
-            notifyIfSufficientBufferStateChanged.call(self, false);
-        }
         return true;
     }, handleInbandEvents = function(data, request, mediaInbandEvents, trackInbandEvents) {
         var events = [], i = 0, identifier, size, expTwo = Math.pow(256, 2), expThree = Math.pow(256, 3), fragmentStarttime = Math.max(isNaN(request.startTime) ? 0 : request.startTime, 0), eventStreams = [], event, inbandEvents;
@@ -6650,8 +6647,7 @@ MediaPlayer.dependencies.BufferController = function() {
         isBufferingCompleted = true;
         this.notify(MediaPlayer.dependencies.BufferController.eventList.ENAME_BUFFERING_COMPLETED);
     }, checkIfSufficientBuffer = function() {
-        var timeToEnd = this.playbackController.getTimeToStreamEnd();
-        if (bufferLevel < STALL_THRESHOLD && minBufferTime < timeToEnd || minBufferTime >= timeToEnd && !isBufferingCompleted) {
+        if (bufferLevel < STALL_THRESHOLD && !isBufferingCompleted) {
             notifyIfSufficientBufferStateChanged.call(this, false);
         } else {
             notifyIfSufficientBufferStateChanged.call(this, true);
