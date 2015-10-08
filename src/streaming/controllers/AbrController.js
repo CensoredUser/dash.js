@@ -36,6 +36,7 @@ MediaPlayer.dependencies.AbrController = function () {
         qualityDict = {},
         confidenceDict = {},
         bitrateDict = {},
+        averageThroughputDict = {},
         streamProcessorDict={},
         abandonmentStateDict = {},
         abandonmentTimeout,
@@ -373,12 +374,20 @@ MediaPlayer.dependencies.AbrController = function () {
              return infoList;
         },
 
+        setAverageThroughput: function(type, value) {
+            averageThroughputDict[type] = value;
+        },
+
+        getAverageThroughput: function(type) {
+            return averageThroughputDict[type];
+        },
+
         updateTopQualityIndex: function(mediaInfo) {
             var type = mediaInfo.type,
                 streamId = mediaInfo.streamInfo.id,
                 max;
 
-            max = mediaInfo.trackCount - 1;
+            max = mediaInfo.representationCount - 1;
             setTopQualityIndex(type, streamId, max);
 
             return max;
@@ -406,6 +415,7 @@ MediaPlayer.dependencies.AbrController = function () {
             confidenceDict = {};
             streamProcessorDict = {};
             abandonmentStateDict = {};
+            averageThroughputDict = {};
             clearTimeout(abandonmentTimeout);
             abandonmentTimeout = null;
         }
